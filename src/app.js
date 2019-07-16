@@ -25,9 +25,67 @@ const morganOption = NODE_ENV === "production" ? "tiny" : "common";
 app.use(morgan(morganOption));
 app.use(helmet());
 app.use(cors());
+app.use(express.json());
+
+const cards = [
+  {
+    id: 1,
+    title: "Task One",
+    content: "This is card one"
+  }
+];
+const lists = [
+  {
+    id: 1,
+    header: "List one",
+    cardIds: [1]
+  }
+];
+
+app.use(function validateBearerToken(req, res, next) {
+  const apiToken = process.env.API_TOKEN;
+  const authToken = req.get("Authorization");
+
+  if (!authToken || authToken.split(" ")[1] !== apiToken) {
+    logger.error(`Unaothrizard request to path: ${req.path}`);
+    return res.status(401).json({ error: "Unauthorized request" });
+  }
+  // move to the next middleware
+  next();
+});
 
 app.get("/", (req, res) => {
   res.send("Hello, world!");
+});
+
+app.get("/card", (req, res) => {
+  res.json(cards);
+});
+
+app.get("/list", (req, res) => {
+  res.json(lists);
+});
+
+app.get("/card/:id", (req, res) => {
+  const { id } = req.params;
+  const card = cards.find(c => c.id == id);
+  //verify we can find this card
+  if (!card) {
+    logger.error(`Card with id ${id} not found.`);
+    return res.status(404).send("Card Not Found");
+  }
+  res.json(card);
+});
+
+app.get("/list/:id", (req, res) => {
+  const { id } = req.params;
+  const list = lists.find(li => li.id == id);
+  //verify we can find this list
+  if (!list) {
+    logger.error(`List with id ${id} not found.`);
+    return res.status(404).send("List Not Found");
+  }
+  res.json(list);
 });
 
 app.use(function errorHandler(error, req, res, next) {
