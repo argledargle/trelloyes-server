@@ -9,14 +9,18 @@ const winston = require("winston");
 const app = express();
 
 const logger = winston.createLogger({
-  level: 'info',
+  level: "info",
   format: winston.format.json(),
-  transports: [
-    new winston.transports.File({ filename: 'info.log'})
-  ]
+  transports: [new winston.transports.File({ filename: "info.log" })]
 });
 
-const morganOption = (NODE_ENV === 'production') ? "tiny" : "common";
+if (NODE_ENV !== "production") {
+  logger.add(
+    new winston.transports.Console({ format: winston.format.simple() })
+  );
+}
+
+const morganOption = NODE_ENV === "production" ? "tiny" : "common";
 
 app.use(morgan(morganOption));
 app.use(helmet());
