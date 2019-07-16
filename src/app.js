@@ -3,9 +3,18 @@ const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 const helmet = require("helmet");
-const { NODE_ENV } = require("./config")
+const { NODE_ENV } = require("./config");
+const winston = require("winston");
 
 const app = express();
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'info.log'})
+  ]
+});
 
 const morganOption = (NODE_ENV === 'production') ? "tiny" : "common";
 
