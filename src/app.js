@@ -4,37 +4,18 @@ const morgan = require("morgan");
 const cors = require("cors");
 const helmet = require("helmet");
 const { NODE_ENV } = require("./config");
-const winston = require("winston");
 const uuid = require("uuid/v4");
+const cardRouter = require('./card/card-router')
 
 const app = express();
 
-const logger = winston.createLogger({
-  level: "info",
-  format: winston.format.json(),
-  transports: [new winston.transports.File({ filename: "info.log" })]
-});
-
-if (NODE_ENV !== "production") {
-  logger.add(
-    new winston.transports.Console({ format: winston.format.simple() })
-  );
-}
-
 const morganOption = NODE_ENV === "production" ? "tiny" : "common";
 
+app.use(cardRouter);
 app.use(morgan(morganOption));
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
 
-const cards = [
-  {
-    id: 1,
-    title: "Task One",
-    content: "This is card one"
-  }
-];
 const lists = [
   {
     id: 1,
@@ -59,23 +40,8 @@ app.get("/", (req, res) => {
   res.send("Hello, world!");
 });
 
-app.get("/card", (req, res) => {
-  res.json(cards);
-});
-
 app.get("/list", (req, res) => {
   res.json(lists);
-});
-
-app.get("/card/:id", (req, res) => {
-  const { id } = req.params;
-  const card = cards.find(c => c.id == id);
-  //verify we can find this card
-  if (!card) {
-    logger.error(`Card with id ${id} not found.`);
-    return res.status(404).send("Card Not Found");
-  }
-  res.json(card);
 });
 
 app.get("/list/:id", (req, res) => {
@@ -87,33 +53,6 @@ app.get("/list/:id", (req, res) => {
     return res.status(404).send("List Not Found");
   }
   res.json(list);
-});
-
-app.post("/card", (req, res) => {
-  const { title, content } = req.body;
-  if (!title) {
-    logger.error(`Title is required`);
-    return res.status(400).send("Invalid data");
-  }
-
-  if (!content) {
-    logger.error(`Content is required`);
-    return res.status(400).send("Invalid data");
-  }
-  const id = uuid();
-  const card = {
-    id,
-    title,
-    content
-  };
-  cards.push(card);
-  logger.info(
-    `Card with id ${id} created with title of ${title} and content of ${content}`
-  );
-  res
-    .status(201)
-    .location(`http://localhost:800/card/${id}`)
-    .json(card);
 });
 
 app.post("/list", (req, res) => {
@@ -170,30 +109,6 @@ app.delete("/list/:id", (req, res) => {
   lists.splice(listIndex, 1);
 
   logger.info(`List with id ${id} deleted.`);
-  res.status(204).end();
-});
-
-app.delete("/card/:id", (req, res) => {
-  const { id } = req.params;
-
-  const cardIndex = cards.findIndex(c => c.id == id);
-
-  if (cardIndex === -1) {
-    logger.error(`Card with id ${id} not found.`);
-    return res.status(404).send("Not found");
-  }
-
-  //remove card from lists
-  //assume cardIds are not duplicated in the cardIds array
-  lists.forEach(list => {
-    const cardIds = list.cardIds.filter(cid => cid !== id);
-    list.cardIds = cardIds;
-  });
-
-  cards.splice(cardIndex, 1);
-
-  logger.info(`Card with id ${id} deleted.`);
-
   res.status(204).end();
 });
 
